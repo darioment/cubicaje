@@ -8,12 +8,10 @@
         body { margin: 0; overflow: hidden; }
         #canvas-container { width: 100vw; height: 100vh; }
         .controls { position: absolute; top: 10px; left: 10px; z-index: 100; color: #39ff14; }
-        .controls input, .controls button { display: block; margin-bottom: 10px; color: #fff; background-color: #000; border: 1px solid #39ff14; }
+        .controls input, .controls button { display: block; margin-bottom: 10px; color: #39ff14; background-color: black; border: 1px solid #39ff14; }
         .controls label { color: #39ff14; }
         .container-icons { display: flex; gap: 5px; margin-top: 10px; }
         .container-icon { width: 20px; height: 20px; background-color: #39ff14; cursor: pointer; }
-        .box-list { margin-top: 20px; color: #39ff14; }
-        .box-list-item { margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -31,7 +29,6 @@
         <div id="boxCount">Cajas creadas: 0</div>
         <div id="containerCount">Contenedores creados: 1</div>
         <div class="container-icons" id="containerIcons"></div>
-        <div class="box-list" id="boxList"></div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -126,14 +123,13 @@
         function createBoxes() {
             let boxSizes = [
                 { width: 10, height: 10, depth: 10 },
-                { width: 15, height: 15, depth: 15 },
-                { width: 20, height: 20, depth: 20 },
+
                 { width: 25, height: 25, depth: 25 },
                 { width: 30, height: 30, depth: 30 }
             ];
 
             boxSizes.forEach(size => {
-                for (let i = 0; i < 2; i++) {
+                for (let i = 0; i < 1; i++) {
                     let geometry = new THREE.BoxGeometry(size.width, size.height, size.depth);
                     let color = Math.random() * 0xffffff;
                     let material = new THREE.MeshBasicMaterial({ color: color });
@@ -208,15 +204,16 @@
             document.getElementById('containerCount').innerText = 'Contenedores creados: ' + requiredContainers;
             updateContainerIcons(requiredContainers);
 
-            // Place the boxes within the containers
+            // Place boxes in the containers using bin-packing heuristic
+            boxes.sort((a, b) => b.geometry.parameters.width * b.geometry.parameters.height * b.geometry.parameters.depth - a.geometry.parameters.width * a.geometry.parameters.height * a.geometry.parameters.depth);
+
             let containerIndex = 0;
             let positions = [];
 
-            boxes.forEach((box, i) => {
+            boxes.forEach(box => {
                 let placed = false;
-                while (!placed) {
+                while (!placed && containerIndex < containers.length) {
                     let container = containers[containerIndex];
-
                     for (let x = -controls.containerWidth / 2; x <= controls.containerWidth / 2 - box.geometry.parameters.width; x++) {
                         for (let y = -controls.containerHeight / 2; y <= controls.containerHeight / 2 - box.geometry.parameters.height; y++) {
                             for (let z = -controls.containerDepth / 2; z <= controls.containerDepth / 2 - box.geometry.parameters.depth; z++) {
@@ -254,19 +251,6 @@
                     }
                     if (!placed) containerIndex++;
                 }
-            });
-
-            updateBoxList();
-        }
-
-        function updateBoxList() {
-            let boxList = document.getElementById('boxList');
-            boxList.innerHTML = '';
-            boxes.forEach((box, index) => {
-                let listItem = document.createElement('div');
-                listItem.className = 'box-list-item';
-                listItem.innerText = `Caja ${index + 1}: Contenedor ${containers.indexOf(box.parent) + 1}`;
-                boxList.appendChild(listItem);
             });
         }
 
